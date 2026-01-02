@@ -8,7 +8,9 @@
 <div align="center">
 
   **如果这个项目对你有帮助，请点个 Star 支持一下！ ⭐**
-  **If this project helps you, please give a Star to support us! ⭐**
+ 
+  **If this project helps you, please give a Star to support me! ⭐**
+  
   [![GitHub stars](https://img.shields.io/github/stars/wangshengithub/FREEGLM?style=social)](https://github.com/wangshengithub/FREEGLM/stargazers)
   [![GitHub forks](https://img.shields.io/github/forks/wangshengithub/FREEGLM?style=social)](https://github.com/wangshengithub/FREEGLM/network/members)
 
@@ -173,5 +175,6 @@ This project uses **Node.js + Express** to build a local proxy server:
 Issues and Pull Requests are welcome!
 
 ### 📄 License
+
 
 MIT License
