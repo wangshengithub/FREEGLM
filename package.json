@@ -1,0 +1,16 @@
+{
+  "name": "FREEGLM",
+  "version": "1.0.0",
+  "description": "A local proxy server for GLM-4 API with built-in CORS bypass.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6"
+  },
+  "author": "wangshengithub",
+  "license": "MIT"
+}

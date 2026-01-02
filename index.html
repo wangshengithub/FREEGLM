@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREEGLM - Free AI Chat</title>
+    <style>
+        :root {
+            --primary-color: #ffb088; 
+            --primary-hover: #ff9665;
+            
+            --bg-color: #fffbf7; 
+            --chat-bg: #ffffff;
+            --surface-color: #ffffff;
+            
+            --user-bubble-bg: #fff0e8; 
+            --user-text-color: #5d4037;
+            --ai-text-color: #4a4a4a;
+            
+            --text-main: #5a4642;
+            --text-secondary: #9c8f8c;
+            --border-color: #fff0e8;
+            
+            --shadow-sm: 0 2px 4px rgba(255, 176, 136, 0.1);
+            --shadow-md: 0 8px 24px rgba(255, 176, 136, 0.15);
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            flex-shrink: 0;
+            height: 64px;
+            border-bottom: 1px solid rgba(255, 176, 136, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background-color: rgba(255, 251, 247, 0.85);
+            backdrop-filter: blur(12px);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #5d4037;
+        }
+        
+        .header-title svg { color: var(--primary-color); }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: rgba(255, 176, 136, 0.2);
+            color: #d47a52;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .status-badge.online { background-color: #e6fffa; color: #319795; }
+
+        /* 新建对话按钮 */
+        .reset-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .reset-btn:hover {
+            background-color: #fff0e8;
+            color: var(--primary-color);
+        }
+        .reset-btn svg { width: 20px; height: 20px; }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding-top: 84px; /* Header + spacing */
+            padding-bottom: 110px; /* Input + spacing */
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .message-row {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 32px;
+            animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .message-row.user { flex-direction: row-reverse; }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background-color: #fff;
+            box-shadow: var(--shadow-sm);
+        }
+        .avatar svg { width: 24px; height: 24px; }
+        .message-row.user .avatar { background-color: var(--user-bubble-bg); color: var(--primary-color); }
+        .message-row.ai .avatar { background: linear-gradient(135deg, #fff0e8 0%, #ffdec2 100%); color: #d47a52; }
+
+        .bubble {
+            max-width: 80%;
+            padding: 16px 20px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .message-row.user .bubble {
+            background-color: var(--primary-color);
+            color: #fff;
+            border-top-right-radius: 4px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message-row.ai .bubble {
+            background-color: var(--surface-color);
+            color: var(--ai-text-color);
+            border: 1px solid rgba(255, 176, 136, 0.15);
+            border-top-left-radius: 4px;
+        }
+
+        /* --- 广告横幅 --- */
+        .ad-banner {
+            margin-top: 16px;
+            padding: 16px;
+            background-color: #fffbf7;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .ad-banner p { margin: 0 0 8px 0; }
+        .ad-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            background-color: #fff;
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 1px solid var(--primary-color);
+            transition: all 0.2s;
+        }
+        .ad-btn:hover { background-color: var(--primary-color); color: white; transform: translateY(-1px); }
+
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, #fffbf7 60%, rgba(255,251,247,0));
+            padding: 20px;
+            padding-bottom: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .input-box {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            border: 2px solid transparent;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: flex-end;
+            padding: 10px 12px;
+            transition: all 0.3s;
+        }
+
+        .input-box:focus-within {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 176, 136, 0.2);
+        }
+
+        textarea {
+            flex: 1;
+            border: none;
+            resize: none;
+            padding: 10px;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            max-height: 200px;
+            outline: none;
+            background: transparent;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        #send-btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #ff9665 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            margin-left: 10px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(255, 176, 136, 0.4);
+        }
+        #send-btn:hover { transform: scale(1.05); }
+        #send-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #e0e0e0; box-shadow: none; }
+        #send-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
+        .dot { width: 6px; height: 6px; background-color: #ddd; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; background-color: var(--primary-color); }
+        .dot:nth-child(2) { animation-delay: -0.16s; background-color: #ffdec2; }
+        .dot:nth-child(3) { animation-delay: 0s; background-color: #fff0e8; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #e07d5b; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            <path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" fill-opacity="0.6"/>
+        </svg>
+        FREEGLM
+    </div>
+    <div class="header-right">
+        <div id="status" class="status-badge online">就绪</div>
+        <button id="reset-btn" class="reset-btn" title="新建对话">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </button>
+    </div>
+</header>
+
+<main>
+    <div id="chat-window" class="container">
+       <div class="message-row ai">
+            <div class="avatar ai">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L21 17l-2.6-1.4L17 13l-1.4 2.6L13 17zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zM11.8 10c.9-1.8 2.5-3.1 4.5-3.8V4.2c-2.7.8-5 2.6-6.3 5.2l1.8.6zm-6.4 2.8L3 7.4v2.6l3.1 4.6L19 15v-2.3L5.4 12.8zM12 17l-4 1.8v-2l4-1.8z"/>
+                </svg>
+            </div>
+            <div class="bubble">
+                你好！我是你的智能助手 FREEGLM。<br>有什么需要帮助的吗？
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="input-container">
+    <div class="input-box">
+        <textarea id="user-input" placeholder="在这里输入内容..." rows="1"></textarea>
+        <button id="send-btn" title="发送">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+        </button>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api'; 
+    const SESSION_URL = `${API_BASE}/setsession.php`;
+    const STREAM_URL = `${API_BASE}/stream.php`;
+
+    let chatHistory = [];
+
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const statusDiv = document.getElementById('status');
+
+    let isGenerating = false;
+
+    userInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if(this.value === '') this.style.height = 'auto';
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if(confirm("确定要清空当前对话并开始新的对话吗？")) {
+            chatHistory = [];
+            chatWindow.innerHTML = '';
+            appendMessage('ai', '好的，已经为你清空记忆。我们可以重新开始聊点什么？');
+        }
+    });
+
+    function appendMessage(role, content = '') {
+        const row = document.createElement('div');
+        row.className = `message-row ${role}`;
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = `avatar ${role}`;
+        
+        if (role === 'user') {
+            avatarDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+        } else {
+            avatarDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L21 17l-2.6-1.4L17 13l-1.4 2.6L13 17zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zM11.8 10c.9-1.8 2.5-3.1 4.5-3.8V4.2c-2.7.8-5 2.6-6.3 5.2l1.8.6zm-6.4 2.8L3 7.4v2.6l3.1 4.6L19 15v-2.3L5.4 12.8zM12 17l-4 1.8v-2l4-1.8z"/></svg>`;
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        if (content === '') {
+            bubble.innerHTML = '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+        } else {
+            bubble.innerHTML = content;
+        }
+
+        row.appendChild(avatarDiv);
+        row.appendChild(bubble);
+        chatWindow.appendChild(row);
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        return { bubble };
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text || isGenerating) return;
+
+        userInput.value = '';
+        userInput.style.height = 'auto';
+        appendMessage('user', text.replace(/\n/g, '<br>'));
+        
+        isGenerating = true;
+        sendBtn.disabled = true;
+        statusDiv.textContent = '思考中...';
+        statusDiv.classList.remove('online');
+
+        const { bubble: aiBubble } = appendMessage('ai', '');
+
+        try {
+            const formData = new FormData();
+            formData.append('message', text);
+            formData.append('context', JSON.stringify(chatHistory));
+            formData.append('key', 'null');
+            formData.append('model', '3');
+            formData.append('model_name', 'glm-4');
+            formData.append('key_c', '123123123');
+            formData.append('temperature', '0');
+
+            const res1 = await fetch(SESSION_URL, { method: 'POST', body: formData, credentials: 'include' });
+            if (!res1.ok) throw new Error('Session Error');
+            const json1 = await res1.json();
+            if (!json1.success) throw new Error('Init Failed');
+
+            aiBubble.innerHTML = '';
+            
+            const res2 = await fetch(STREAM_URL, { credentials: 'include' });
+            if (!res2.ok) throw new Error('Stream Error');
+
+            const reader = res2.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+            let fullText = '';
+            let hasAppendedAd = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.trim().startsWith('data: ')) continue;
+                    const dataStr = line.replace('data: ', '').trim();
+                    
+                    if (dataStr === '[DONE]') break;
+
+                    try {
+                        const json = JSON.parse(dataStr);
+                        if (json.choices && json.choices[0].delta && json.choices[0].delta.content) {
+                            const chunk = json.choices[0].delta.content;
+                            fullText += chunk;
+                            aiBubble.textContent = fullText; 
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+                        }
+
+                        if (json.choices && json.choices[0].finish_reason === 'stop' && !hasAppendedAd) {
+                            const adHtml = `
+                                <div class="ad-banner">
+                                    <p>如果喜欢这个项目，请支持一下吧！</p>
+                                    <a href="https://github.com/wangshengithub/FREEGLM" target="_blank" class="ad-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                        </svg>
+                                        给个 Star
+                                    </a>
+                                </div>
+                            `;
+                            aiBubble.innerHTML += adHtml;
+                            hasAppendedAd = true;
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                            
+                            // --- 关键修改：保存本次对话到历史 ---
+                            // 将用户输入 和 AI 回答 存入历史
+                            chatHistory.push([text, fullText]);
+                        }
+                    } catch (e) { }
+                }
+            }
+
+        } catch (err) {
+            console.error(err);
+            if (!aiBubble.textContent) {
+                aiBubble.textContent = '发生错误: ' + err.message;
+            }
+        } finally {
+            isGenerating = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+            statusDiv.textContent = '就绪';
+            statusDiv.classList.add('online');
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
