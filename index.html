@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FREEGLM - Free AI Chat</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <style>
         :root {
             --primary-color: #ffb088; 
@@ -20,7 +21,7 @@
             --text-main: #5a4642;
             --text-secondary: #9c8f8c;
             --border-color: #fff0e8;
-            
+          
             --shadow-sm: 0 2px 4px rgba(255, 176, 136, 0.1);
             --shadow-md: 0 8px 24px rgba(255, 176, 136, 0.15);
             
@@ -49,7 +50,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
-            background-color: rgba(255, 251, 247, 0.85);
+            background-color: rgba(255, 251, 247, 0.9);
             backdrop-filter: blur(12px);
             position: fixed;
             top: 0;
@@ -59,20 +60,17 @@
 
         .header-title {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
             gap: 10px;
             color: #5d4037;
+            user-select: none;
         }
         
         .header-title svg { color: var(--primary-color); }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
 
         .status-badge {
             font-size: 0.75rem;
@@ -86,7 +84,6 @@
         
         .status-badge.online { background-color: #e6fffa; color: #319795; }
 
-        /* 新建对话按钮 */
         .reset-btn {
             background: none;
             border: none;
@@ -107,8 +104,8 @@
         main {
             flex: 1;
             overflow-y: auto;
-            padding-top: 84px; /* Header + spacing */
-            padding-bottom: 110px; /* Input + spacing */
+            padding-top: 84px;
+            padding-bottom: 110px;
             scroll-behavior: smooth;
         }
 
@@ -147,9 +144,10 @@
             padding: 16px 20px;
             border-radius: 18px;
             font-size: 0.95rem;
-            line-height: 1.6;
+            line-height: 1.7;
             position: relative;
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            word-wrap: break-word;
         }
 
         .message-row.user .bubble {
@@ -166,7 +164,53 @@
             border-top-left-radius: 4px;
         }
 
-        /* --- 广告横幅 --- */
+        .markdown-body { font-size: 1rem; }
+        .markdown-body p { margin: 0.5em 0; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin: 0.8em 0 0.5em; font-weight: 600; color: #444; }
+        .markdown-body h1 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .markdown-body h2 { font-size: 1.25em; }
+        .markdown-body ul, .markdown-body ol { padding-left: 20px; margin: 0.5em 0; }
+        .markdown-body code {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            background-color: rgba(0,0,0,0.05);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #e07d5b;
+        }
+        .markdown-body pre {
+            background-color: #2d2d2d;
+            color: #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            border-radius: 0;
+        }
+        .markdown-body blockquote {
+            border-left: 4px solid var(--primary-color);
+            padding-left: 15px;
+            color: #666;
+            margin: 10px 0;
+            background: #fff9f5;
+        }
+        .markdown-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .markdown-body th { background-color: #f2f2f2; }
+
         .ad-banner {
             margin-top: 16px;
             padding: 16px;
@@ -257,7 +301,7 @@
         }
         #send-btn:hover { transform: scale(1.05); }
         #send-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #e0e0e0; box-shadow: none; }
-        #send-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        #send-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -267,7 +311,6 @@
         .dot:nth-child(2) { animation-delay: -0.16s; background-color: #ffdec2; }
         .dot:nth-child(3) { animation-delay: 0s; background-color: #fff0e8; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #e07d5b; }
     </style>
 </head>
 <body>
@@ -276,7 +319,7 @@
     <div class="header-title">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-            <path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" fill-opacity="0.6"/>
+            <path d="M11.5 10h1v3h-1zM11.5 14h1v1h-1z" fill-opacity="0.6"/>
         </svg>
         FREEGLM
     </div>
@@ -293,10 +336,10 @@
 
 <main>
     <div id="chat-window" class="container">
-       <div class="message-row ai">
+        <div class="message-row ai">
             <div class="avatar ai">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L21 17l-2.6-1.4L17 13l-1.4 2.6L13 17zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zM11.8 10c.9-1.8 2.5-3.1 4.5-3.8V4.2c-2.7.8-5 2.6-6.3 5.2l1.8.6zm-6.4 2.8L3 7.4v2.6l3.1 4.6L19 15v-2.3L5.4 12.8zM12 17l-4 1.8v-2l4-1.8z"/>
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
             </div>
             <div class="bubble">
@@ -310,7 +353,7 @@
     <div class="input-box">
         <textarea id="user-input" placeholder="在这里输入内容..." rows="1"></textarea>
         <button id="send-btn" title="发送">
-            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
     </div>
 </div>
@@ -354,15 +397,20 @@
         if (role === 'user') {
             avatarDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
         } else {
-            avatarDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L21 17l-2.6-1.4L17 13l-1.4 2.6L13 17zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zM11.8 10c.9-1.8 2.5-3.1 4.5-3.8V4.2c-2.7.8-5 2.6-6.3 5.2l1.8.6zm-6.4 2.8L3 7.4v2.6l3.1 4.6L19 15v-2.3L5.4 12.8zM12 17l-4 1.8v-2l4-1.8z"/></svg>`;
+            avatarDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
         }
 
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
+        
+        if (role === 'ai') {
+            bubble.classList.add('markdown-body');
+        }
+
         if (content === '') {
             bubble.innerHTML = '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
         } else {
-            bubble.innerHTML = content;
+            bubble.innerHTML = marked.parse(content);
         }
 
         row.appendChild(avatarDiv);
@@ -433,7 +481,9 @@
                         if (json.choices && json.choices[0].delta && json.choices[0].delta.content) {
                             const chunk = json.choices[0].delta.content;
                             fullText += chunk;
-                            aiBubble.textContent = fullText; 
+                            
+                            aiBubble.innerHTML = marked.parse(fullText); 
+                            
                             window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
                         }
 
@@ -453,8 +503,6 @@
                             hasAppendedAd = true;
                             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                             
-                            // --- 关键修改：保存本次对话到历史 ---
-                            // 将用户输入 和 AI 回答 存入历史
                             chatHistory.push([text, fullText]);
                         }
                     } catch (e) { }
@@ -483,6 +531,3 @@
         }
     });
 </script>
-
-</body>
-</html>
