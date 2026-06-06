@@ -1,5 +1,8 @@
 # FREEGLM
 
+你还可以看看[**我在城市种田养鸡**](https://github.com/wangshengithub/ai-farm-novel)。
+You can also check out [**I Farm and Raise Chickens in the City**](https://github.com/wangshengithub/ai-farm-novel).
+
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
